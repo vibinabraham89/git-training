@@ -1,1 +1,3 @@
 Learning Git professionally
+Git add stages files
+Commits should be atomic
