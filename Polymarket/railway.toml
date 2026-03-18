@@ -1,0 +1,12 @@
+[build]
+builder = "nixpacks"
+
+[deploy]
+# This is a cron-only service — no web server needed
+startCommand = "python cron_runner.py"
+restartPolicyType = "never"
+
+[[crons]]
+# Run every 15 minutes
+schedule = "*/15 * * * *"
+command   = "python cron_runner.py"
