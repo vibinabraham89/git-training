@@ -48,3 +48,12 @@
 2026-03-19 00:41:37  INFO      SIGNAL  BUY   EV=40.27%  $    401  US forces enter Iran by March 31?
 2026-03-19 00:41:37  INFO      SCAN END — 4 signal(s)
 2026-03-19 00:41:37  INFO      Telegram summary sent (4 signal(s))
+2026-03-19 00:45:54  INFO      ───────────────────────────────────────────────────────
+2026-03-19 00:45:54  INFO      SCAN START
+2026-03-19 00:45:55  INFO      Markets: 33 active above $100,000
+2026-03-19 00:45:55  INFO      BTC/USDT: $71,360
+2026-03-19 00:46:10  INFO      SIGNAL  BUY   EV=259.11%  $    500  US x Iran ceasefire by March 31?
+2026-03-19 00:46:10  INFO      SIGNAL  BUY   EV=39.28%  $    294  US forces enter Iran by March 31?
+2026-03-19 00:46:10  INFO      SCAN END — 2 signal(s)
+2026-03-19 00:46:10  INFO      Dedup: suppressed 2 repeat signal(s)
+2026-03-19 00:46:10  INFO      Telegram summary sent (0 signal(s))

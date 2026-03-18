@@ -148,6 +148,31 @@ def save_results(results: list[dict]):
         json.dump(existing, f, indent=2)
 
 
+def dedup_signals(results: list[dict], lookback: int = 3) -> list[dict]:
+    """
+    Remove signals for markets that fired in the last `lookback` runs.
+    Prevents the same 4 markets spamming Telegram every 15 minutes.
+    """
+    path = "logs/signals.json"
+    if not os.path.exists(path):
+        return results
+    try:
+        with open(path) as f:
+            history = json.load(f)
+    except Exception:
+        return results
+
+    # Collect market names from the last N*max_signals_per_run records
+    recent = history[-(lookback * 10):]
+    recently_alerted = {r["market"] for r in recent}
+
+    fresh = [r for r in results if r["market"] not in recently_alerted]
+    dupes = len(results) - len(fresh)
+    if dupes:
+        log.info(f"Dedup: suppressed {dupes} repeat signal(s)")
+    return fresh
+
+
 def send_telegram_alerts(results: list[dict]):
     """Send a Telegram summary for this scan run."""
     token   = os.environ.get("TELEGRAM_BOT_TOKEN", "")
@@ -169,8 +194,9 @@ if __name__ == "__main__":
     try:
         results = run_scan()
         if results:
-            save_results(results)
-            send_telegram_alerts(results)
+            fresh = dedup_signals(results)
+            save_results(results)          # always log everything
+            send_telegram_alerts(fresh)    # only alert new signals
         sys.exit(0)
     except Exception as e:
         log.exception(f"Cron job crashed: {e}")

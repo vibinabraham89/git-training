@@ -13,7 +13,9 @@ from typing import Optional
 from dataclasses import dataclass
 
 
-POLYMARKET_FEE = 0.02   # ~2% round-trip
+POLYMARKET_FEE  = 0.02   # ~2% round-trip
+MIN_MARKET_PRICE = 0.05  # skip markets priced below 5% — near-resolved, EV misleading
+MAX_EV_CAP       = 5.0   # cap EV at 500% for ranking — avoids near-zero price distortion
 
 
 @dataclass
@@ -44,7 +46,10 @@ def rank_opportunities(signals: list[MarketSignal],
     """
     rows = []
     for s in signals:
-        ev    = ev_gap(s.model_p, s.market_price)
+        # Skip near-resolved markets — EV formula breaks down below 5%
+        if s.market_price < MIN_MARKET_PRICE:
+            continue
+        ev    = min(ev_gap(s.model_p, s.market_price), MAX_EV_CAP)
         edge  = s.model_p - s.market_price
         kelly = max(0, (s.model_p * ((1/s.market_price) - 1) - (1 - s.model_p))
                     / ((1/s.market_price) - 1))
@@ -54,7 +59,7 @@ def rank_opportunities(signals: list[MarketSignal],
             "model_p":      s.model_p,
             "edge":         edge,
             "ev_net":       ev,
-            "kelly_f":      kelly * 0.25,   # quarter-Kelly
+            "kelly_f":      kelly * 0.25,
             "vol_usd":      s.volume_usd,
             "enter":        ev > min_ev and s.volume_usd >= min_vol,
         })

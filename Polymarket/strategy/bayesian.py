@@ -55,18 +55,27 @@ class BayesianModel:
         dist = stats.beta(self.alpha, self.beta)
         return dist.ppf(0.025), dist.ppf(0.975)
 
-    def update(self, evidence: Evidence) -> float:
+    def update(self, evidence: Evidence,
+               max_shift: float = 0.12) -> float:
         """
-        Soft Bayesian update using evidence likelihood as a Beta pseudo-observation.
-        weight controls how strongly this evidence shifts the posterior.
-        Returns new posterior mean.
+        Soft Bayesian update using evidence as Beta pseudo-observations.
+        max_shift: posterior cannot move more than this far from the prior
+                   in a single update (default ±12%).
+                   Prevents neutral news from causing 3% → 27% jumps.
         """
-        # Scale evidence to pseudo-counts proportional to weight
-        strength = evidence.weight * 2.0   # max 2 pseudo-obs per evidence
+        prior = self.posterior_mean
+        strength = evidence.weight * 2.0
         self.alpha += evidence.value * strength
         self.beta  += (1 - evidence.value) * strength
 
-        prior_mean = self.history[-1]["posterior"] if self.history else 0.5
+        # Clamp posterior to [prior - max_shift, prior + max_shift]
+        raw       = self.posterior_mean
+        clamped   = max(prior - max_shift, min(prior + max_shift, raw))
+        # Re-adjust alpha/beta to match clamped value
+        total     = self.alpha + self.beta
+        self.alpha = clamped * total
+        self.beta  = (1 - clamped) * total
+
         self.history.append({
             "source":    evidence.source,
             "value":     evidence.value,

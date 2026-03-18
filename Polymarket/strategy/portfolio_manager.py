@@ -88,12 +88,29 @@ def compute_kelly(model_p: float, market_price: float) -> float:
     return max(0.0, raw * KELLY_FRAC)
 
 
+def confidence_scalar(model_p: float, market_price: float) -> float:
+    """
+    Scale bet size by how far model_p is from market_price (edge confidence).
+    Small edge (5-8%) → 0.5x size. Strong edge (15%+) → 1.0x size.
+    Prevents max-sizing weak signals.
+    """
+    edge = abs(model_p - market_price)
+    if edge < 0.05:
+        return 0.3
+    if edge < 0.10:
+        return 0.5
+    if edge < 0.15:
+        return 0.75
+    return 1.0
+
+
 def size_trade(trade: Trade, portfolio: Portfolio) -> float:
     """
     Return USD size for trade.
-    Uses fractional Kelly but caps at MAX_PER_BET of bankroll.
+    Uses fractional Kelly × confidence scalar, capped at MAX_PER_BET.
     """
-    kelly_usd = trade.kelly_f * portfolio.bankroll
+    scalar    = confidence_scalar(trade.model_p, trade.market_price)
+    kelly_usd = trade.kelly_f * portfolio.bankroll * scalar
     cap_usd   = portfolio.bankroll * MAX_PER_BET
     return min(kelly_usd, cap_usd, portfolio.available)
 
