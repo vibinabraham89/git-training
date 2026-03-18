@@ -13,13 +13,21 @@ from typing import Optional
 from scipy.stats import norm
 
 
-BINANCE_BASE = "https://api.binance.com/api/v3"
+BINANCE_BASE   = "https://api.binance.com/api/v3"
+COINGECKO_BASE = "https://api.coingecko.com/api/v3"
 
 SYMBOL_MAP = {
     "BTC": "BTCUSDT",
     "ETH": "ETHUSDT",
     "SOL": "SOLUSDT",
     "BNB": "BNBUSDT",
+}
+
+COINGECKO_ID_MAP = {
+    "BTC": "bitcoin",
+    "ETH": "ethereum",
+    "SOL": "solana",
+    "BNB": "binancecoin",
 }
 
 
@@ -33,22 +41,61 @@ def _get(endpoint: str, params: dict = None) -> dict | list | None:
         return None
 
 
+def _get_coingecko_price(coin: str) -> Optional[float]:
+    """CoinGecko fallback — works from all cloud providers."""
+    cg_id = COINGECKO_ID_MAP.get(coin.upper())
+    if not cg_id:
+        return None
+    try:
+        r = requests.get(
+            f"{COINGECKO_BASE}/simple/price",
+            params={"ids": cg_id, "vs_currencies": "usd"},
+            timeout=10,
+            headers={"User-Agent": "polymarket-bot/1.0"},
+        )
+        r.raise_for_status()
+        return float(r.json()[cg_id]["usd"])
+    except Exception:
+        return None
+
+
+def _get_coingecko_daily_closes(coin: str, days: int = 60) -> list[float]:
+    """CoinGecko daily OHLC fallback."""
+    cg_id = COINGECKO_ID_MAP.get(coin.upper())
+    if not cg_id:
+        return []
+    try:
+        r = requests.get(
+            f"{COINGECKO_BASE}/coins/{cg_id}/market_chart",
+            params={"vs_currency": "usd", "days": days, "interval": "daily"},
+            timeout=10,
+            headers={"User-Agent": "polymarket-bot/1.0"},
+        )
+        r.raise_for_status()
+        prices = r.json().get("prices", [])
+        return [p[1] for p in prices]
+    except Exception:
+        return []
+
+
 def get_price(coin: str = "BTC") -> Optional[float]:
     """
-    Get current price for a coin.
+    Get current price. Tries Binance first, falls back to CoinGecko.
     coin: "BTC", "ETH", "SOL"
     """
+    # Try Binance
     symbol = SYMBOL_MAP.get(coin.upper(), f"{coin.upper()}USDT")
     data   = _get("/ticker/price", {"symbol": symbol})
-    if not data:
-        return None
-    return float(data["price"])
+    if data:
+        return float(data["price"])
+    # Fallback: CoinGecko
+    return _get_coingecko_price(coin)
 
 
 def get_daily_closes(coin: str = "BTC", days: int = 60) -> list[float]:
     """
     Fetch last N daily closing prices.
-    Uses Binance klines (candlestick) endpoint.
+    Tries Binance first, falls back to CoinGecko.
     """
     symbol = SYMBOL_MAP.get(coin.upper(), f"{coin.upper()}USDT")
     data   = _get("/klines", {
@@ -56,10 +103,10 @@ def get_daily_closes(coin: str = "BTC", days: int = 60) -> list[float]:
         "interval": "1d",
         "limit":    days + 1,
     })
-    if not data:
-        return []
-    # kline format: [open_time, open, high, low, close, ...]
-    return [float(k[4]) for k in data]
+    if data:
+        return [float(k[4]) for k in data]
+    # Fallback: CoinGecko
+    return _get_coingecko_daily_closes(coin, days)
 
 
 def log_normal_model_p(current_price: float,

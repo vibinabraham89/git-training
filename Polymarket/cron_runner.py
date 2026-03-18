@@ -12,6 +12,9 @@ import json
 import logging
 from datetime import datetime, timezone
 
+# Force stdout flush on every write — fixes Railway log ordering
+sys.stdout.reconfigure(line_buffering=True)
+
 # ── logs dir must exist before FileHandler is created ─────────────────────────
 os.makedirs("logs", exist_ok=True)
 
