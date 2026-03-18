@@ -34,7 +34,10 @@ def load_env_file(path: str = ".env"):
 # SOURCE 1 — Reddit (no key needed)
 # ══════════════════════════════════════════════════════════════════════════════
 
-REDDIT_HEADERS = {"User-Agent": "polymarket-quant-bot/1.0"}
+# Reddit requires a descriptive User-Agent or it throttles cloud IPs aggressively
+REDDIT_HEADERS = {
+    "User-Agent": "python:polymarket-quant-bot:v1.0 (research only)"
+}
 
 SUBREDDIT_MAP = {
     "crypto":       ["CryptoCurrency", "Bitcoin", "ethereum"],
@@ -62,19 +65,26 @@ def fetch_reddit_posts(subreddit: str,
 
 
 def search_reddit(query: str, subreddit: str = "all",
-                   limit: int = 25) -> list[dict]:
-    """Search Reddit for posts matching query."""
+                   limit: int = 25, retries: int = 2) -> list[dict]:
+    """Search Reddit with retry + backoff. Returns [] if rate limited."""
     url = f"https://www.reddit.com/r/{subreddit}/search.json"
-    try:
-        r = requests.get(url, headers=REDDIT_HEADERS,
-                         params={"q": query, "limit": limit,
-                                 "sort": "new", "t": "day"},
-                         timeout=10)
-        r.raise_for_status()
-        return r.json().get("data", {}).get("children", [])
-    except Exception as e:
-        print(f"[Reddit] Search '{query}': {e}")
-        return []
+    for attempt in range(retries):
+        try:
+            r = requests.get(url, headers=REDDIT_HEADERS,
+                             params={"q": query, "limit": limit,
+                                     "sort": "new", "t": "week"},
+                             timeout=10)
+            if r.status_code == 429:
+                wait = 2 ** (attempt + 1)   # 2s, 4s
+                time.sleep(wait)
+                continue
+            r.raise_for_status()
+            return r.json().get("data", {}).get("children", [])
+        except Exception as e:
+            print(f"[Reddit] Search '{query}': {e}")
+            return []
+    print(f"[Reddit] Skipping '{query}' — still rate limited after {retries} retries")
+    return []
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -187,19 +197,25 @@ def build_evidence_from_reddit(query: str,
                                  category: str = "geopolitics",
                                  verbose: bool = True):
     """
-    Search Reddit for query → score posts → return Evidence.
-    Uses r/worldnews for geo, r/CryptoCurrency for crypto, etc.
+    Search Reddit → score posts → return Evidence.
+    Falls back to Google News if Reddit is rate limited.
     """
     from strategy.bayesian import Evidence
 
     subreddits = SUBREDDIT_MAP.get(category, ["worldnews"])
     all_titles = []
 
-    for sub in subreddits[:2]:   # max 2 subreddits to stay fast
-        posts = search_reddit(query, subreddit=sub, limit=20)
+    for sub in subreddits[:1]:   # max 1 subreddit on Railway to avoid 429s
+        posts = search_reddit(query, subreddit=sub, limit=15)
         titles = [p["data"].get("title", "") for p in posts]
         all_titles.extend(titles)
-        time.sleep(1)   # Reddit asks for 1 req/sec
+        time.sleep(2)   # be polite — 2s gap between requests
+
+    # Fall back to Google News if Reddit returned nothing
+    if not all_titles:
+        if verbose:
+            print(f"[Reddit] No data for '{query}' — falling back to Google News")
+        return build_evidence_from_google_news(query, verbose=verbose)
 
     score = score_texts(all_titles)
 

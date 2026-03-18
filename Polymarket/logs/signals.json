@@ -126,5 +126,37 @@
     "ev_net": 0.444,
     "signal": "BUY",
     "timestamp": "2026-03-18T19:09:28.527935+00:00"
+  },
+  {
+    "market": "Will Bitcoin reach $150,000 in March?",
+    "category": "crypto",
+    "size_usd": 344.71,
+    "ev_net": 54.9953,
+    "signal": "BUY",
+    "timestamp": "2026-03-18T19:11:21.170501+00:00"
+  },
+  {
+    "market": "Will the Iranian regime fall by March 31?",
+    "category": "geopolitics",
+    "size_usd": 500.0,
+    "ev_net": 5.5725,
+    "signal": "BUY",
+    "timestamp": "2026-03-18T19:11:21.170501+00:00"
+  },
+  {
+    "market": "US x Iran ceasefire by March 31?",
+    "category": "geopolitics",
+    "size_usd": 500.0,
+    "ev_net": 2.8182,
+    "signal": "BUY",
+    "timestamp": "2026-03-18T19:11:21.170501+00:00"
+  },
+  {
+    "market": "US forces enter Iran by March 31?",
+    "category": "geopolitics",
+    "size_usd": 400.82,
+    "ev_net": 0.4027,
+    "signal": "BUY",
+    "timestamp": "2026-03-18T19:11:21.170501+00:00"
   }
 ]
