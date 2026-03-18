@@ -8,3 +8,13 @@
 2026-03-19 00:14:44  INFO      SIGNAL  BUY   EV=38.44%  $    383  US forces enter Iran by March 31?
 2026-03-19 00:14:44  INFO      SCAN END — 4 signal(s)
 2026-03-19 00:14:44  INFO      Telegram not configured yet (Step 4).
+2026-03-19 00:17:25  INFO      ───────────────────────────────────────────────────────
+2026-03-19 00:17:25  INFO      SCAN START
+2026-03-19 00:17:26  INFO      Markets: 32 active above $100,000
+2026-03-19 00:17:26  INFO      BTC/USDT: $71,529
+2026-03-19 00:17:48  INFO      SIGNAL  BUY   EV=6311.33%  $    396  Will Bitcoin reach $150,000 in March?
+2026-03-19 00:17:48  INFO      SIGNAL  BUY   EV=631.52%  $    500  Will the Iranian regime fall by March 31?
+2026-03-19 00:17:48  INFO      SIGNAL  BUY   EV=280.48%  $    500  US x Iran ceasefire by March 31?
+2026-03-19 00:17:48  INFO      SIGNAL  BUY   EV=38.44%  $    383  US forces enter Iran by March 31?
+2026-03-19 00:17:48  INFO      SCAN END — 4 signal(s)
+2026-03-19 00:17:48  INFO      Telegram not configured (add tokens to Railway env vars).

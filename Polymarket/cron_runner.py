@@ -146,35 +146,18 @@ def save_results(results: list[dict]):
 
 
 def send_telegram_alerts(results: list[dict]):
-    """Send a Telegram message per signal. Filled in on Step 4."""
+    """Send a Telegram summary for this scan run."""
     token   = os.environ.get("TELEGRAM_BOT_TOKEN", "")
     chat_id = os.environ.get("TELEGRAM_CHAT_ID", "")
     if not token or not chat_id:
-        log.info("Telegram not configured yet (Step 4).")
+        log.info("Telegram not configured (add tokens to Railway env vars).")
         return
-
-    import requests
-    for r in results:
-        msg = (
-            f"*Polymarket Signal*\n\n"
-            f"*{r['market']}*\n"
-            f"EV: `{r['ev_net']:.1%}`\n"
-            f"Size: `${r['size_usd']:,.0f}`\n"
-            f"Category: {r['category']}\n"
-            f"Signal: *{r['signal']}*"
-        )
-        try:
-            resp = requests.post(
-                f"https://api.telegram.org/bot{token}/sendMessage",
-                json={"chat_id": chat_id, "text": msg, "parse_mode": "Markdown"},
-                timeout=10,
-            )
-            if resp.status_code == 200:
-                log.info(f"Telegram sent: {r['market'][:40]}")
-            else:
-                log.warning(f"Telegram failed {resp.status_code}: {resp.text[:80]}")
-        except Exception as e:
-            log.warning(f"Telegram error: {e}")
+    try:
+        from data.telegram_client import send_scan_summary
+        send_scan_summary(results)
+        log.info(f"Telegram summary sent ({len(results)} signal(s))")
+    except Exception as e:
+        log.warning(f"Telegram error: {e}")
 
 
 # ── Main ───────────────────────────────────────────────────────────────────────
